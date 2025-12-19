@@ -747,6 +747,127 @@ class _ShopHomePageState extends State<ShopHomePage>
   }
 
   // --- MIC FUNCTION ---
+  // --- MIC FUNCTION & VOICE PROCESSING ---
+  int _parseQuantity(String text) {
+    final RegExp digitRegExp = RegExp(r'[0-9०-९]+');
+    final match = digitRegExp.firstMatch(text);
+    if (match != null) {
+      String digitStr = match.group(0)!;
+      // Convert Nepali digits to English
+      const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+      for (int i = 0; i < nepaliDigits.length; i++) {
+        digitStr = digitStr.replaceAll(nepaliDigits[i], i.toString());
+      }
+      return int.tryParse(digitStr) ?? 1;
+    }
+    return 1;
+  }
+
+  void _processVoiceCommand(String text) {
+    String lowerText = text.toLowerCase();
+
+    // Define keywords
+    List<String> sellKeywords = [
+      'बेचियो',
+      'बिक्री',
+      'भयो',
+      'sell',
+      'sold',
+      'घट्यो',
+      'bhechiyo',
+      'bechiyo',
+      'sales',
+      'out'
+    ];
+    List<String> buyKeywords = [
+      'किनियो',
+      'आयो',
+      'buy',
+      'bought',
+      'थपियो',
+      'kiniyo',
+      'aayo',
+      'thapiyo',
+      'add',
+      'in'
+    ];
+
+    String action = '';
+    // Check action
+    for (var k in sellKeywords) {
+      if (lowerText.contains(k)) {
+        action = 'sell';
+        break;
+      }
+    }
+    if (action.isEmpty) {
+      for (var k in buyKeywords) {
+        if (lowerText.contains(k)) {
+          action = 'buy';
+          break;
+        }
+      }
+    }
+
+    if (action.isEmpty) {
+      // No action found, treat as search
+      setState(() {
+        _searchController.text = text;
+        _filterProducts();
+      });
+      return;
+    }
+
+    // Extract quantity
+    int quantity = _parseQuantity(text);
+
+    // Extract product name
+    String cleanText = lowerText;
+    // Remove digits
+    cleanText = cleanText.replaceAll(RegExp(r'[0-9०-९]+'), '');
+    // Remove keywords
+    if (action == 'sell') {
+      for (var k in sellKeywords) cleanText = cleanText.replaceAll(k, '');
+    } else {
+      for (var k in buyKeywords) cleanText = cleanText.replaceAll(k, '');
+    }
+
+    String queryName = cleanText.trim();
+    if (queryName.isEmpty) return;
+
+    // Find product (Fuzzy Match)
+    Product? matchedProduct;
+    try {
+      matchedProduct = _products.firstWhere((p) {
+        // Match if product name contains query or query contains product name
+        // Handling spaces and simple variations
+        String pName = p.name.toLowerCase();
+        return pName == queryName ||
+            pName.contains(queryName) ||
+            queryName.contains(pName);
+      });
+    } catch (e) {
+      matchedProduct = null;
+    }
+
+    if (matchedProduct != null) {
+      if (action == 'sell') {
+        _sellProduct(matchedProduct, quantity);
+      } else {
+        _buyProduct(matchedProduct, quantity);
+      }
+      _searchController.clear(); // Clear search on success
+    } else {
+      // Product not found, fallback to search but warn
+      setState(() {
+        _searchController.text = queryName;
+        _filterProducts();
+      });
+      _showSnackBar('कार्य "$action" पत्ता लाग्यो तर सामान भेटिएन। खोज्दै...',
+          Colors.orange);
+    }
+  }
+
   void _listenVoice() async {
     if (!_isListening) {
       // 1. Request Permission explicitly
@@ -784,10 +905,16 @@ class _ShopHomePageState extends State<ShopHomePage>
           localeId: 'ne_NP',
           listenMode: stt.ListenMode.confirmation,
           onResult: (val) {
-            setState(() {
-              _searchController.text = val.recognizedWords;
-              _filterProducts();
-            });
+            // Process the final result
+            if (val.finalResult) {
+              _processVoiceCommand(val.recognizedWords);
+            } else {
+              // Update search real-time for feedback
+              setState(() {
+                _searchController.text = val.recognizedWords;
+                _filterProducts();
+              });
+            }
           },
         );
       } else {
@@ -1426,42 +1553,224 @@ class _ShopHomePageState extends State<ShopHomePage>
     final totalValue = _products.fold(
         0.0, (sum, product) => sum + (product.quantity * product.price));
     final lowStockItems =
-        _products.where((product) => product.quantity <= 2).length;
+        _products.where((product) => product.quantity <= 5).length;
+
+    // Calculate Top 3 Selling Items
+    Map<String, int> productSales = {};
+    for (var sale in _sales) {
+      if (sale.type == 'sell') {
+        productSales[sale.productName] =
+            (productSales[sale.productName] ?? 0) + sale.quantity;
+      }
+    }
+
+    var sortedProducts = productSales.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    var topSelling = sortedProducts.take(3).toList();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title:
-            Text('पसल विश्लेषण', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAnalyticsRow('कुल उत्पादन:', totalProducts.toString()),
-            _buildAnalyticsRow('कुल स्टक:', totalStock.toString()),
-            _buildAnalyticsRow(
-                'स्टक मूल्य:', 'रू ${totalValue.toStringAsFixed(0)}'),
-            _buildAnalyticsRow('कम स्टक चेतावनी:', lowStockItems.toString()),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('बन्द गर्नुहोस्'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 10,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Color(0xFF1B5E20),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics_rounded,
+                        color: Colors.white, size: 28),
+                    SizedBox(width: 12),
+                    Text(
+                      'पसल विश्लेषण',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Grid for Totals
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        childAspectRatio:
+                            1.0, // Square ratio provides much more height flexibility
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        children: [
+                          _buildAnalyticCard(
+                              'कुल उत्पादन',
+                              totalProducts.toString(),
+                              Icons.category,
+                              Colors.blue),
+                          _buildAnalyticCard('कुल स्टक', totalStock.toString(),
+                              Icons.inventory_2, Colors.green),
+                          _buildAnalyticCard(
+                              'स्टक मूल्य',
+                              'रू ${totalValue.toStringAsFixed(0)}',
+                              Icons.monetization_on,
+                              Colors.purple),
+                          _buildAnalyticCard(
+                              'कम स्टक चेतावनी',
+                              lowStockItems.toString(),
+                              Icons.warning_amber_rounded,
+                              lowStockItems > 0 ? Colors.red : Colors.grey),
+                        ],
+                      ),
+                      SizedBox(height: 24),
+                      Divider(),
+                      SizedBox(height: 12),
+
+                      // Top Selling Section
+                      Text(
+                        "धेरै बिक्ने सामान (Top 3)",
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B5E20)),
+                      ),
+                      SizedBox(height: 12),
+                      if (topSelling.isEmpty)
+                        Center(
+                            child: Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Text("डाटा उपलब्ध छैन",
+                              style: TextStyle(color: Colors.grey)),
+                        ))
+                      else
+                        Column(
+                          children: List.generate(topSelling.length, (index) {
+                            final item = topSelling[index];
+                            final rankColor = index == 0
+                                ? Color(0xFFFFD700) // Gold
+                                : index == 1
+                                    ? Color(0xFFC0C0C0) // Silver
+                                    : Color(0xFFCD7F32); // Bronze
+                            return Container(
+                              margin: EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: rankColor.withOpacity(0.2),
+                                  child: Text(
+                                    "#${index + 1}",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: rankColor
+                                            .withOpacity(1.0)
+                                            .withRed(150)), // darken a bit
+                                  ),
+                                ),
+                                title: Text(item.key,
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w600)),
+                                trailing: Text(
+                                  "${item.value} बिक्यो",
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1B5E20)),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF1B5E20),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text("बन्द गर्नुहोस्",
+                        style: TextStyle(color: Colors.white, fontSize: 16)),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildAnalyticsRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildAnalyticCard(
+      String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment:
+            MainAxisAlignment.spaceBetween, // Distribute space evenly
         children: [
-          Text(label),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold)),
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: color.withOpacity(0.2),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          SizedBox(
+              height:
+                  8), // Replaced spacer with specific gap if needed, or rely on spaceBetween
+          FittedBox(
+            // Prevents text overflow
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87),
+              maxLines: 1,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
