@@ -5,7 +5,7 @@ import '../shop.dart'; // Import SaleRecord from shop.dart
 
 class ProfilePage extends StatefulWidget {
   final List<SaleRecord> sales;
-  
+
   const ProfilePage({Key? key, required this.sales}) : super(key: key);
 
   @override
@@ -18,7 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   int purchaseTransactions = 0;
   int dailyBonuses = 0;
   int streakBonuses = 0;
-  
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
     purchaseTransactions = 0;
     dailyBonuses = 0;
     streakBonuses = 0;
-    
+
     // Calculate sale and purchase transactions
     for (var sale in widget.sales) {
       if (sale.type == 'sell') {
@@ -40,50 +40,51 @@ class _ProfilePageState extends State<ProfilePage> {
         purchaseTransactions++;
       }
     }
-    
+
     // Calculate daily bonuses (10+ transactions in a day)
     Map<String, int> transactionsByDay = {};
     for (var sale in widget.sales) {
       String dateKey = '${sale.time.year}-${sale.time.month}-${sale.time.day}';
       transactionsByDay[dateKey] = (transactionsByDay[dateKey] ?? 0) + 1;
     }
-    
+
     for (var count in transactionsByDay.values) {
       if (count >= 10) {
         dailyBonuses++;
       }
     }
-    
+
     // Calculate streak bonuses (7-day streak with 5+ transactions daily)
     streakBonuses = _calculateStreakBonus(transactionsByDay);
-    
+
     // Calculate total points
-    totalPoints = (saleTransactions * 2) + 
-                  (purchaseTransactions * 1) + 
-                  (dailyBonuses * 10) + 
-                  (streakBonuses * 50);
-    
+    totalPoints = (saleTransactions * 2) +
+        (purchaseTransactions * 1) +
+        (dailyBonuses * 10) +
+        (streakBonuses * 50);
+
     setState(() {});
   }
 
   int _calculateStreakBonus(Map<String, int> transactionsByDay) {
     if (transactionsByDay.isEmpty) return 0;
-    
+
     // Sort dates
     List<DateTime> dates = transactionsByDay.keys.map((key) {
       List<String> parts = key.split('-');
-      return DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      return DateTime(
+          int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
     }).toList();
     dates.sort();
-    
+
     int streakCount = 0;
     int currentStreak = 0;
     DateTime? lastDate;
-    
+
     for (var date in dates) {
       String dateKey = '${date.year}-${date.month}-${date.day}';
       int txnCount = transactionsByDay[dateKey] ?? 0;
-      
+
       if (txnCount >= 5) {
         if (lastDate == null || date.difference(lastDate).inDays == 1) {
           currentStreak++;
@@ -100,7 +101,7 @@ class _ProfilePageState extends State<ProfilePage> {
         lastDate = null;
       }
     }
-    
+
     return streakCount;
   }
 
@@ -109,7 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('प्रोफाइल र पुरस्कार'),
-        backgroundColor: Color(0xFF1E88E5),
+        backgroundColor: Color(0xFF1B5E20),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -120,9 +121,7 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
                 ),
               ),
               padding: EdgeInsets.all(20),
@@ -131,7 +130,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 50, color: Color(0xFF1E88E5)),
+                    child:
+                        Icon(Icons.person, size: 50, color: Color(0xFF1B5E20)),
                   ),
                   SizedBox(height: 12),
                   Text(
@@ -189,7 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            
+
             // Total Points Card - Smaller and compact
             Container(
               margin: EdgeInsets.all(16),
@@ -237,7 +237,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            
+
             // Rewards Breakdown
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -249,11 +249,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E88E5),
+                      color: Color(0xFF1B5E20),
                     ),
                   ),
                   SizedBox(height: 16),
-                  
+
                   // Sale Transactions
                   _buildRewardCard(
                     icon: Icons.sell,
@@ -262,7 +262,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     points: saleTransactions * 2,
                     color: Colors.green,
                   ),
-                  
+
                   // Purchase Transactions
                   _buildRewardCard(
                     icon: Icons.shopping_cart,
@@ -271,7 +271,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     points: purchaseTransactions * 1,
                     color: Colors.blue,
                   ),
-                  
+
                   // Daily Bonus
                   _buildRewardCard(
                     icon: Icons.calendar_today,
@@ -280,39 +280,40 @@ class _ProfilePageState extends State<ProfilePage> {
                     points: dailyBonuses * 10,
                     color: Colors.orange,
                   ),
-                  
+
                   // Streak Bonus
                   _buildRewardCard(
                     icon: Icons.local_fire_department,
                     title: 'स्ट्रीक बोनस',
-                    subtitle: '$streakBonuses सप्ताह (7-दिन, 5+ दैनिक) × 50 अंक',
+                    subtitle:
+                        '$streakBonuses सप्ताह (7-दिन, 5+ दैनिक) × 50 अंक',
                     points: streakBonuses * 50,
                     color: Colors.red,
                   ),
-                  
+
                   SizedBox(height: 24),
-                  
+
                   // Info Card
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: Colors.green.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue.shade200),
+                      border: Border.all(color: Colors.green.shade200),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline, color: Color(0xFF1E88E5)),
+                            Icon(Icons.info_outline, color: Color(0xFF1B5E20)),
                             SizedBox(width: 8),
                             Text(
                               'पुरस्कार नियम',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Color(0xFF1E88E5),
+                                color: Color(0xFF1B5E20),
                               ),
                             ),
                           ],
@@ -321,11 +322,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildInfoRow('• बिक्री कारोबार: 2 अंक'),
                         _buildInfoRow('• खरिद कारोबार: 1 अंक'),
                         _buildInfoRow('• दैनिक बोनस: 10 अंक (10+ कारोबार)'),
-                        _buildInfoRow('• स्ट्रीक बोनस: 50 अंक (7-दिन, 5+ दैनिक)'),
+                        _buildInfoRow(
+                            '• स्ट्रीक बोनस: 50 अंक (7-दिन, 5+ दैनिक)'),
                       ],
                     ),
                   ),
-                  
+
                   SizedBox(height: 24),
                 ],
               ),

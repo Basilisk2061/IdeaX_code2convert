@@ -18,7 +18,7 @@ class NepalShopApp extends StatelessWidget {
       title: 'पसले',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        primaryColor: Color(0xFF1E88E5),
+        primaryColor: Color(0xFF1B5E20),
         fontFamily: 'Roboto',
       ),
       home: ShopHomePage(),
@@ -807,7 +807,7 @@ class _ShopHomePageState extends State<ShopHomePage>
       borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       child: BottomNavigationBar(
         backgroundColor: Colors.white,
-        selectedItemColor: Color(0xFF1E88E5),
+        selectedItemColor: Color(0xFF1B5E20),
         unselectedItemColor: Colors.grey[500],
         currentIndex: _selectedNavbarIndex,
         elevation: 14,
@@ -859,7 +859,7 @@ class _ShopHomePageState extends State<ShopHomePage>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(
           children: [
-            Icon(Icons.info_rounded, color: Color(0xFF1E88E5)),
+            Icon(Icons.info_rounded, color: Color(0xFF1B5E20)),
             SizedBox(width: 10),
             Text('हाम्रो बारेमा',
                 style: TextStyle(fontWeight: FontWeight.bold)),
@@ -910,19 +910,6 @@ class _ShopHomePageState extends State<ShopHomePage>
       appBar: AppBar(
         title: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                'lib/img/logo.jpeg',
-                height: 40,
-                width: 40,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(Icons.store, color: Colors.white, size: 40);
-                },
-              ),
-            ),
-            SizedBox(width: 12),
             Text(
               'पसले',
               style:
@@ -930,7 +917,7 @@ class _ShopHomePageState extends State<ShopHomePage>
             ),
           ],
         ),
-        backgroundColor: Color(0xFF1E88E5),
+        backgroundColor: Color(0xFF1B5E20),
         elevation: 8,
         actions: [
           IconButton(
@@ -980,7 +967,7 @@ class _ShopHomePageState extends State<ShopHomePage>
                         decoration: InputDecoration(
                           hintText: 'उत्पादन खोज्नुहोस्...',
                           prefixIcon:
-                              Icon(Icons.search, color: Color(0xFF1E88E5)),
+                              Icon(Icons.search, color: Color(0xFF1B5E20)),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
                                   icon: Icon(Icons.clear, color: Colors.grey),
@@ -1020,7 +1007,7 @@ class _ShopHomePageState extends State<ShopHomePage>
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : Color(0xFF1E88E5),
+                                        : Color(0xFF1B5E20),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -1032,7 +1019,7 @@ class _ShopHomePageState extends State<ShopHomePage>
                                   });
                                 },
                                 backgroundColor: Colors.white,
-                                selectedColor: Color(0xFF1E88E5),
+                                selectedColor: Color(0xFF1B5E20),
                                 elevation: isSelected ? 4 : 2,
                               ),
                             );
@@ -1195,7 +1182,7 @@ class _ShopHomePageState extends State<ShopHomePage>
                                             style: TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
-                                              color: Color(0xFF1E88E5),
+                                              color: Color(0xFF1B5E20),
                                             ),
                                           ),
                                           Text(
@@ -1420,7 +1407,7 @@ class _ShopHomePageState extends State<ShopHomePage>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddProductDialog(),
-        backgroundColor: Color(0xFF1E88E5),
+        backgroundColor: Color(0xFF1B5E20),
         icon: Icon(Icons.add, color: Colors.white),
         label: Text('नयाँ उत्पादन थप्नुहोस्',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

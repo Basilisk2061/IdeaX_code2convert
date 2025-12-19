@@ -13,7 +13,7 @@ class MyRootApp extends StatelessWidget {
       title: 'नेपाल पसल प्रबन्धक',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        primaryColor: Color(0xFF1E88E5),
+        primaryColor: Color(0xFF1B5E20),
         fontFamily: 'Roboto',
       ),
       home: LoginPage(), // Always start at login
