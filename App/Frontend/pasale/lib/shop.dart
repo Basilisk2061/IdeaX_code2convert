@@ -1003,6 +1003,7 @@ class _ShopHomePageState extends State<ShopHomePage>
           }
           // index==0 is home, do nothing (just stay here) 
           // as we are already on home page
+          // You can implement navigation to home if needed
         },
       ),
     );
