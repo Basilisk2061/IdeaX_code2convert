@@ -1001,7 +1001,8 @@ class _ShopHomePageState extends State<ShopHomePage>
           } else if (index == 2) {
             _showAboutUsDialog();
           }
-          // index==0 is home, do nothing (just stay here)
+          // index==0 is home, do nothing (just stay here) 
+          // as we are already on home page
         },
       ),
     );
@@ -1037,7 +1038,7 @@ class _ShopHomePageState extends State<ShopHomePage>
               Text(
                 'पसले एक सरल, स्मार्ट र नेपाली भाषामा आधारित पसल व्यवस्थापन एप हो। '
                 'यस एपको उद्देश्य साना तथा मझौला व्यवसायीहरूको दैनिक व्यापार सजिलो बनाउनु हो।',
-                style: TextStyle(fontSize: 16, color: Colors.grey[800]),
+                style: TextStyle(fontSize: 16, color: Colors.grey[800] ),
               ),
               SizedBox(height: 12),
               Container(
