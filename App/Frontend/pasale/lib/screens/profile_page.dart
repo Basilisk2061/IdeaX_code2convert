@@ -41,11 +41,13 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
 
-    // Calculate daily bonuses (10+ transactions in a day)
+    // Calculate daily bonuses (10+ sales in a day)
     Map<String, int> transactionsByDay = {};
     for (var sale in widget.sales) {
-      String dateKey = '${sale.time.year}-${sale.time.month}-${sale.time.day}';
-      transactionsByDay[dateKey] = (transactionsByDay[dateKey] ?? 0) + 1;
+      if (sale.type == 'sell') {
+        String dateKey = '${sale.time.year}-${sale.time.month}-${sale.time.day}';
+        transactionsByDay[dateKey] = (transactionsByDay[dateKey] ?? 0) + 1;
+      }
     }
 
     for (var count in transactionsByDay.values) {
@@ -54,12 +56,12 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
 
-    // Calculate streak bonuses (7-day streak with 5+ transactions daily)
+    // Calculate streak bonuses (7-day streak with 5+ sales daily)
     streakBonuses = _calculateStreakBonus(transactionsByDay);
 
     // Calculate total points
+    // Only sales contribute to points now
     totalPoints = (saleTransactions * 2) +
-        (purchaseTransactions * 1) +
         (dailyBonuses * 10) +
         (streakBonuses * 50);
 
@@ -141,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.shopping_cart_rounded,
                     title: 'खरिद कारोबार',
                     subtitle: '$purchaseTransactions कारोबार',
-                    points: purchaseTransactions * 1,
+                    points: 0,
                     color: Colors.blue,
                   ),
                   _buildRewardTile(
@@ -334,19 +336,32 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
           SizedBox(height: 24),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: 0.0, // Initial state as requested
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFB300)),
-              minHeight: 10,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'अर्को इनामको लागि ७०% पूरा भयो',
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: (totalPoints / 100).clamp(0.0, 1.0)),
+            duration: Duration(milliseconds: 1500),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: value,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFB300)),
+                      minHeight: 10,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'अर्को इनामको लागि ${(value * 100).toInt()}% पूरा भयो',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
