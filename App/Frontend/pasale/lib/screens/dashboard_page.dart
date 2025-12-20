@@ -54,18 +54,18 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     // 1. Calculate General Stats
     int totalProducts = widget.products.length;
-    int totalStock = widget.products.fold(0, (sum, p) => sum + p.quantity);
+    double totalStock = widget.products.fold(0.0, (sum, p) => sum + p.quantity);
     double totalValue =
         widget.products.fold(0.0, (sum, p) => sum + p.quantity * p.price);
 
     // 2. Filter Sell Transactions for Dashboard Top Cards
-    int salesTodayCount = widget.sales
+    double salesTodayCount = widget.sales
         .where((s) =>
             s.type == 'sell' &&
             s.time.year == DateTime.now().year &&
             s.time.month == DateTime.now().month &&
             s.time.day == DateTime.now().day)
-        .fold(0, (sum, s) => sum + s.quantity);
+        .fold(0.0, (sum, s) => sum + s.quantity);
 
     double salesTodayAmount = widget.sales
         .where((s) =>
@@ -75,23 +75,23 @@ class _DashboardPageState extends State<DashboardPage> {
             s.time.day == DateTime.now().day)
         .fold(0.0, (sum, s) => sum + s.totalAmount);
 
-    int totalSalesCount = widget.sales
+    double totalSalesCount = widget.sales
         .where((s) => s.type == 'sell')
-        .fold(0, (sum, s) => sum + s.quantity);
+        .fold(0.0, (sum, s) => sum + s.quantity);
 
     double totalSalesAmount = widget.sales
         .where((s) => s.type == 'sell')
         .fold(0.0, (sum, s) => sum + s.totalAmount);
 
     // 3. Prepare Data for Product Table (Only Sold Items)
-    Map<String, int> salesPerProduct = {
+    Map<String, double> salesPerProduct = {
       for (var p in widget.products)
         p.name: widget.sales
             .where((s) => s.productName == p.name && s.type == 'sell')
             .fold(0, (sum, s) => sum + s.quantity)
     };
 
-    Map<String, int> salesTodayPerProduct = {
+    Map<String, double> salesTodayPerProduct = {
       for (var p in widget.products)
         p.name: widget.sales
             .where((s) =>
@@ -177,12 +177,24 @@ class _DashboardPageState extends State<DashboardPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _headerStatItem(
-                          "आजको कमाई",
-                          "रू ${salesTodayAmount.toStringAsFixed(0)}",
-                          Icons.attach_money),
+                        "आजको कमाई",
+                        "रू ${salesTodayAmount.toStringAsFixed(0)}",
+                        Text(
+                          'रू',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                       Container(height: 40, width: 1, color: Colors.white30),
-                      _headerStatItem("आजको बिक्री", "$salesTodayCount",
-                          Icons.shopping_bag),
+                      _headerStatItem(
+                        "आजको बिक्री",
+                        "${salesTodayCount % 1 == 0 ? salesTodayCount.toInt() : salesTodayCount.toStringAsFixed(1)}",
+                        Icon(Icons.shopping_bag,
+                            color: Colors.white70, size: 28),
+                      ),
                     ],
                   ),
                 ],
@@ -206,8 +218,11 @@ class _DashboardPageState extends State<DashboardPage> {
                               Icons.category, Colors.orangeAccent)),
                       SizedBox(width: 12),
                       Expanded(
-                          child: _modernCard("कुल मौज्दात", "$totalStock",
-                              Icons.inventory, Colors.blueAccent)),
+                          child: _modernCard(
+                              "कुल मौज्दात",
+                              "${totalStock % 1 == 0 ? totalStock.toInt() : totalStock.toStringAsFixed(1)}",
+                              Icons.inventory,
+                              Colors.blueAccent)),
                     ],
                   ),
                   SizedBox(height: 12),
@@ -229,8 +244,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   Row(
                     children: [
                       Expanded(
-                          child: _modernCard("कुल बिक्री", "$totalSalesCount",
-                              Icons.trending_up, Colors.teal)),
+                          child: _modernCard(
+                              "कुल बिक्री",
+                              "${totalSalesCount % 1 == 0 ? totalSalesCount.toInt() : totalSalesCount.toStringAsFixed(1)}",
+                              Icons.trending_up,
+                              Colors.teal)),
                       SizedBox(width: 12),
                       Expanded(
                           child: _modernCard(
@@ -295,13 +313,13 @@ class _DashboardPageState extends State<DashboardPage> {
                                         DataCell(Text(p.name,
                                             style: TextStyle(
                                                 fontWeight: FontWeight.w500))),
-                                        DataCell(Text(salesPerProduct[p.name]
-                                                ?.toString() ??
-                                            '0')),
                                         DataCell(Text(
-                                            salesTodayPerProduct[p.name]
-                                                    ?.toString() ??
-                                                '0')),
+                                            (salesPerProduct[p.name] ?? 0.0)
+                                                .toStringAsFixed(1))),
+                                        DataCell(Text(
+                                            (salesTodayPerProduct[p.name] ??
+                                                    0.0)
+                                                .toStringAsFixed(1))),
                                       ]);
                                     }).toList(),
                                   ),
@@ -368,10 +386,10 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _headerStatItem(String label, String value, IconData icon) {
+  Widget _headerStatItem(String label, String value, Widget iconWidget) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 28),
+        iconWidget,
         SizedBox(height: 8),
         Text(value,
             style: TextStyle(
@@ -471,7 +489,7 @@ class _DashboardPageState extends State<DashboardPage> {
               title: Text(sale.productName,
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                  '${isSell ? "बिक्री" : "खरिद"}: ${sale.quantity} | ${sale.time.hour.toString().padLeft(2, '0')}:${sale.time.minute.toString().padLeft(2, '0')}',
+                  '${isSell ? "बिक्री" : "खरिद"}: ${sale.quantity % 1 == 0 ? sale.quantity.toInt() : sale.quantity.toStringAsFixed(2)} | ${sale.time.hour.toString().padLeft(2, '0')}:${sale.time.minute.toString().padLeft(2, '0')}',
                   style: TextStyle(fontSize: 12)),
               trailing: Text('रू ${sale.totalAmount.toStringAsFixed(0)}',
                   style: TextStyle(

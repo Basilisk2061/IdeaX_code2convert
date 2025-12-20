@@ -33,7 +33,7 @@ class Product {
   final double price;
   final String unit;
   final String imageUrl;
-  int quantity;
+  double quantity;
 
   Product({
     required this.name,
@@ -41,7 +41,7 @@ class Product {
     required this.price,
     required this.unit,
     this.imageUrl = '',
-    this.quantity = 0,
+    this.quantity = 0.0,
   });
 
   // Convert Product to JSON
@@ -63,7 +63,7 @@ class Product {
       category: json['category'],
       price: json['price'],
       unit: json['unit'],
-      quantity: json['quantity'],
+      quantity: (json['quantity'] as num).toDouble(),
       imageUrl: json['imageUrl'] ?? '',
     );
   }
@@ -72,7 +72,7 @@ class Product {
 class SaleRecord {
   final String productName;
   final DateTime time;
-  final int quantity;
+  final double quantity; // Changed to double
   final double totalAmount;
   final String type; // 'buy' or 'sell'
 
@@ -100,8 +100,8 @@ class SaleRecord {
     return SaleRecord(
       productName: json['productName'],
       time: DateTime.parse(json['time']),
-      quantity: json['quantity'],
-      totalAmount: json['totalAmount'],
+      quantity: (json['quantity'] as num).toDouble(),
+      totalAmount: (json['totalAmount'] as num).toDouble(),
       type: json['type'],
     );
   }
@@ -138,6 +138,43 @@ class _ShopHomePageState extends State<ShopHomePage>
 
   // Map to track quantity counter for each product (for +/- buttons)
   final Map<String, int> _productQuantityCounters = {};
+
+  // Track selected unit for each product
+  final Map<String, String> _productSelectedUnits = {};
+
+  // Helper to get valid derived units based on base unit
+  List<String> _getValidUnits(String baseUnit) {
+    if (['केजी', 'kg'].contains(baseUnit)) return ['केजी', 'ग्राम'];
+    if (['लिटर', 'liter', 'litre'].contains(baseUnit))
+      return ['लिटर', 'मि.लि.'];
+    if (['दर्जन', 'dozen'].contains(baseUnit))
+      return ['दर्जन', 'गोटा']; // 1 Dozen = 12 Pieces
+    if (['प्याकेट', 'packet'].contains(baseUnit)) return ['प्याकेट'];
+    if (['गोटा', 'piece'].contains(baseUnit)) return ['गोटा'];
+    if (['रोल', 'roll'].contains(baseUnit)) return ['रोल'];
+    // Default fallback
+    return [baseUnit];
+  }
+
+  // Convert quantity to base unit value
+  List<double> _convert(double qty, String selectedUnit, String baseUnit) {
+    if (selectedUnit == baseUnit) return [qty, 1.0];
+
+    // kg
+    if (baseUnit == 'केजी') {
+      if (selectedUnit == 'ग्राम') return [qty / 1000.0, 1.0 / 1000.0];
+    }
+    // liter
+    if (baseUnit == 'लिटर') {
+      if (selectedUnit == 'मि.लि.') return [qty / 1000.0, 1.0 / 1000.0];
+    }
+    // dozen
+    if (baseUnit == 'दर्जन') {
+      if (selectedUnit == 'गोटा') return [qty / 12.0, 1.0 / 12.0];
+    }
+
+    return [qty, 1.0]; // No conversion found
+  }
 
   // Voice recognition fields
   late stt.SpeechToText _speech;
@@ -591,8 +628,8 @@ class _ShopHomePageState extends State<ShopHomePage>
   }
 
   // Helper to generate random quantity (between 5 and 28)
-  static int _rand() {
-    return 5 + Random().nextInt(24); // 5 to 28
+  static double _rand() {
+    return (5 + Random().nextInt(24)).toDouble(); // 5 to 28
   }
 
   @override
@@ -639,7 +676,7 @@ class _ShopHomePageState extends State<ShopHomePage>
     await prefs.setString('sales_records', jsonEncode(salesJson));
 
     // Save product quantities
-    final Map<String, int> quantities = {};
+    final Map<String, double> quantities = {};
     for (var product in _products) {
       quantities[product.name] = product.quantity;
     }
@@ -659,9 +696,9 @@ class _ShopHomePageState extends State<ShopHomePage>
     });
   }
 
-  void _buyProduct(Product product, [int quantity = 1]) {
+  void _buyProduct(Product product, [double quantity = 1.0]) {
     setState(() {
-      if (product.quantity < 50) {
+      if (product.quantity < 10000) {
         product.quantity += quantity;
         _sales.add(
           SaleRecord(
@@ -680,7 +717,7 @@ class _ShopHomePageState extends State<ShopHomePage>
         Colors.green);
   }
 
-  void _sellProduct(Product product, [int quantity = 1]) {
+  void _sellProduct(Product product, [double quantity = 1.0]) {
     setState(() {
       if (product.quantity >= quantity) {
         product.quantity -= quantity;
@@ -748,7 +785,7 @@ class _ShopHomePageState extends State<ShopHomePage>
 
   // --- MIC FUNCTION ---
   // --- MIC FUNCTION & VOICE PROCESSING ---
-  int _parseQuantity(String text) {
+  double _parseQuantity(String text) {
     final RegExp digitRegExp = RegExp(r'[0-9०-९]+');
     final match = digitRegExp.firstMatch(text);
     if (match != null) {
@@ -758,9 +795,9 @@ class _ShopHomePageState extends State<ShopHomePage>
       for (int i = 0; i < nepaliDigits.length; i++) {
         digitStr = digitStr.replaceAll(nepaliDigits[i], i.toString());
       }
-      return int.tryParse(digitStr) ?? 1;
+      return double.tryParse(digitStr) ?? 1.0;
     }
-    return 1;
+    return 1.0;
   }
 
   void _processVoiceCommand(String text) {
@@ -819,7 +856,7 @@ class _ShopHomePageState extends State<ShopHomePage>
     }
 
     // Extract quantity
-    int quantity = _parseQuantity(text);
+    double quantity = _parseQuantity(text);
 
     // Extract product name
     String cleanText = lowerText;
@@ -1283,7 +1320,7 @@ class _ShopHomePageState extends State<ShopHomePage>
                                               BorderRadius.circular(20),
                                         ),
                                         child: Text(
-                                          'स्टक: ${product.quantity}',
+                                          'स्टक: ${product.quantity % 1 == 0 ? product.quantity.toInt() : product.quantity.toStringAsFixed(2)} ${product.unit}',
                                           style: TextStyle(
                                             color: product.quantity > 0
                                                 ? Colors.green[700]
@@ -1322,95 +1359,212 @@ class _ShopHomePageState extends State<ShopHomePage>
                                         ],
                                       ),
                                       Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
                                         children: [
-                                          // Quantity selector with +/- buttons
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[200],
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                IconButton(
-                                                  icon: Icon(Icons.remove,
-                                                      size: 20),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      int current =
-                                                          _productQuantityCounters[
-                                                                  product
-                                                                      .name] ??
-                                                              1;
-                                                      if (current > 1) {
-                                                        _productQuantityCounters[
-                                                                product.name] =
-                                                            current - 1;
-                                                      }
-                                                    });
-                                                  },
-                                                  padding: EdgeInsets.all(4),
-                                                  constraints: BoxConstraints(),
+                                          // Quantity selector and Unit Row
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Quantity Selector
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[200],
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                 ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    IconButton(
+                                                      icon: Icon(Icons.remove,
+                                                          size: 20),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          int current =
+                                                              _productQuantityCounters[
+                                                                      product
+                                                                          .name] ??
+                                                                  1;
+                                                          if (current > 1) {
+                                                            _productQuantityCounters[
+                                                                    product
+                                                                        .name] =
+                                                                current - 1;
+                                                          }
+                                                        });
+                                                      },
+                                                      padding:
+                                                          EdgeInsets.all(4),
+                                                      constraints:
+                                                          BoxConstraints(),
+                                                    ),
+                                                    GestureDetector(
+                                                      onTap: () async {
+                                                        int currentQty =
+                                                            _productQuantityCounters[
+                                                                    product
+                                                                        .name] ??
+                                                                1;
+                                                        int? newQty =
+                                                            await showDialog<
+                                                                int>(
+                                                          context: context,
+                                                          builder: (context) =>
+                                                              QuantityPickerDialog(
+                                                                  initialQuantity:
+                                                                      currentQty),
+                                                        );
+                                                        if (newQty != null &&
+                                                            newQty > 0) {
+                                                          setState(() {
+                                                            _productQuantityCounters[
+                                                                    product
+                                                                        .name] =
+                                                                newQty;
+                                                          });
+                                                        }
+                                                      },
+                                                      child: Container(
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 12,
+                                                                vertical: 4),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.white,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          border: Border.all(
+                                                              color: Colors.grey
+                                                                  .shade300),
+                                                        ),
+                                                        child: Text(
+                                                          '${_productQuantityCounters[product.name] ?? 1}',
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color:
+                                                                Colors.black87,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(Icons.add,
+                                                          size: 20),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          int current =
+                                                              _productQuantityCounters[
+                                                                      product
+                                                                          .name] ??
+                                                                  1;
+                                                          if (current < 9999) {
+                                                            _productQuantityCounters[
+                                                                    product
+                                                                        .name] =
+                                                                current + 1;
+                                                          }
+                                                        });
+                                                      },
+                                                      padding:
+                                                          EdgeInsets.all(4),
+                                                      constraints:
+                                                          BoxConstraints(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              // Unit Dropdown next to it
+                                              if (_getValidUnits(product.unit)
+                                                      .length >
+                                                  1) ...[
+                                                SizedBox(width: 8),
                                                 Container(
+                                                  height: 36,
                                                   padding: EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 4),
+                                                      horizontal: 8),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.white,
+                                                    color: Colors.grey[100],
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             12),
+                                                    border: Border.all(
+                                                        color:
+                                                            Colors.grey[300]!),
                                                   ),
-                                                  child: Text(
-                                                    '${_productQuantityCounters[product.name] ?? 1}',
+                                                  child: DropdownButton<String>(
+                                                    value:
+                                                        _productSelectedUnits[
+                                                                product.name] ??
+                                                            product.unit,
+                                                    underline: SizedBox(),
+                                                    icon: Icon(
+                                                        Icons.arrow_drop_down,
+                                                        size: 20,
+                                                        color:
+                                                            Colors.grey[700]),
                                                     style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.black87,
-                                                    ),
+                                                        fontSize: 13,
+                                                        color: Colors.black87,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                    onChanged: (val) {
+                                                      if (val != null) {
+                                                        setState(() {
+                                                          _productSelectedUnits[
+                                                              product
+                                                                  .name] = val;
+                                                        });
+                                                      }
+                                                    },
+                                                    items: _getValidUnits(
+                                                            product.unit)
+                                                        .map((u) {
+                                                      return DropdownMenuItem(
+                                                        value: u,
+                                                        child: Text(u),
+                                                      );
+                                                    }).toList(),
                                                   ),
                                                 ),
-                                                IconButton(
-                                                  icon:
-                                                      Icon(Icons.add, size: 20),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      int current =
-                                                          _productQuantityCounters[
-                                                                  product
-                                                                      .name] ??
-                                                              1;
-                                                      if (current < 5) {
-                                                        _productQuantityCounters[
-                                                                product.name] =
-                                                            current + 1;
-                                                      }
-                                                    });
-                                                  },
-                                                  padding: EdgeInsets.all(4),
-                                                  constraints: BoxConstraints(),
-                                                ),
-                                              ],
-                                            ),
+                                              ] else
+                                                SizedBox(width: 0),
+                                            ],
                                           ),
-                                          SizedBox(height: 8),
+                                          SizedBox(height: 12),
+
                                           // Buy and Sell buttons
                                           Row(
                                             children: [
                                               ElevatedButton(
                                                 onPressed: () {
-                                                  int qty =
+                                                  int qtyInput =
                                                       _productQuantityCounters[
                                                               product.name] ??
                                                           1;
-                                                  _buyProduct(product, qty);
+                                                  String selectedUnit =
+                                                      _productSelectedUnits[
+                                                              product.name] ??
+                                                          product.unit;
+
+                                                  List<double> converted =
+                                                      _convert(
+                                                          qtyInput.toDouble(),
+                                                          selectedUnit,
+                                                          product.unit);
+                                                  double finalQty =
+                                                      converted[0];
+
+                                                  _buyProduct(
+                                                      product, finalQty);
                                                   setState(() {
                                                     _productQuantityCounters[
-                                                            product.name] =
-                                                        1; // Reset to 1
+                                                        product.name] = 1;
                                                   });
                                                 },
                                                 style: ElevatedButton.styleFrom(
@@ -1447,19 +1601,40 @@ class _ShopHomePageState extends State<ShopHomePage>
                                               ElevatedButton(
                                                 onPressed: product.quantity > 0
                                                     ? () {
-                                                        int qty =
+                                                        int qtyInput =
                                                             _productQuantityCounters[
                                                                     product
                                                                         .name] ??
                                                                 1;
-                                                        _sellProduct(
-                                                            product, qty);
-                                                        setState(() {
-                                                          _productQuantityCounters[
-                                                                  product
-                                                                      .name] =
-                                                              1; // Reset to 1
-                                                        });
+                                                        String selectedUnit =
+                                                            _productSelectedUnits[
+                                                                    product
+                                                                        .name] ??
+                                                                product.unit;
+
+                                                        List<double> converted =
+                                                            _convert(
+                                                                qtyInput
+                                                                    .toDouble(),
+                                                                selectedUnit,
+                                                                product.unit);
+                                                        double finalQty =
+                                                            converted[0];
+
+                                                        if (finalQty <=
+                                                            product.quantity) {
+                                                          _sellProduct(product,
+                                                              finalQty);
+                                                          setState(() {
+                                                            _productQuantityCounters[
+                                                                product
+                                                                    .name] = 1;
+                                                          });
+                                                        } else {
+                                                          _showSnackBar(
+                                                              'माफ गर्नुहोस, स्टक कम छ!',
+                                                              Colors.red);
+                                                        }
                                                       }
                                                     : null,
                                                 style: ElevatedButton.styleFrom(
@@ -1549,14 +1724,14 @@ class _ShopHomePageState extends State<ShopHomePage>
   void _showAnalytics() {
     final totalProducts = _products.length;
     final totalStock =
-        _products.fold(0, (sum, product) => sum + product.quantity);
+        _products.fold(0.0, (sum, product) => sum + product.quantity);
     final totalValue = _products.fold(
         0.0, (sum, product) => sum + (product.quantity * product.price));
     final lowStockItems =
         _products.where((product) => product.quantity <= 5).length;
 
     // Calculate Top 3 Selling Items
-    Map<String, int> productSales = {};
+    Map<String, double> productSales = {};
     for (var sale in _sales) {
       if (sale.type == 'sell') {
         productSales[sale.productName] =
@@ -1627,8 +1802,13 @@ class _ShopHomePageState extends State<ShopHomePage>
                               totalProducts.toString(),
                               Icons.category,
                               Colors.blue),
-                          _buildAnalyticCard('कुल स्टक', totalStock.toString(),
-                              Icons.inventory_2, Colors.green),
+                          _buildAnalyticCard(
+                              'कुल स्टक',
+                              totalStock
+                                  .toInt()
+                                  .toString(), // Show rounded int for clean UI
+                              Icons.inventory_2,
+                              Colors.green),
                           _buildAnalyticCard(
                               'स्टक मूल्य',
                               'रू ${totalValue.toStringAsFixed(0)}',
@@ -1693,7 +1873,7 @@ class _ShopHomePageState extends State<ShopHomePage>
                                     style:
                                         TextStyle(fontWeight: FontWeight.w600)),
                                 trailing: Text(
-                                  "${item.value} बिक्यो",
+                                  "${item.value % 1 == 0 ? item.value.toInt() : item.value.toStringAsFixed(2)} बिक्यो",
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1B5E20)),
@@ -1779,79 +1959,297 @@ class _ShopHomePageState extends State<ShopHomePage>
   void _showAddProductDialog() {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
-    final unitController = TextEditingController();
+
+    // Predefined units
+    final List<String> units = [
+      'केजी',
+      'ग्राम',
+      'प्याकेट',
+      'लिटर',
+      'दर्जन',
+      'गोटा'
+    ];
+    String selectedUnit = units[0];
+
     String selectedCategory = _categories[1]; // Default to first real category
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('नयाँ उत्पादन थप्नुहोस्'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(labelText: 'उत्पादन नाम'),
-                ),
-                SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: InputDecoration(labelText: 'कोटि'),
-                  items: _categories
-                      .where((cat) => cat != 'सबै')
-                      .map((cat) =>
-                          DropdownMenuItem(value: cat, child: Text(cat)))
-                      .toList(),
-                  onChanged: (value) =>
-                      setState(() => selectedCategory = value!),
-                ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: priceController,
-                  decoration: InputDecoration(labelText: 'मूल्य (रू)'),
-                  keyboardType: TextInputType.number,
-                ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: unitController,
-                  decoration:
-                      InputDecoration(labelText: 'इकाई (केजी, वटा, लिटर)'),
-                ),
-              ],
+        builder: (context, setState) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 16,
+          child: Container(
+            padding: EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Color(0xFF1B5E20).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.add_shopping_cart,
+                            color: Color(0xFF1B5E20), size: 28),
+                      ),
+                      SizedBox(width: 16),
+                      Text(
+                        'नयाँ उत्पादन',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  // Name Input
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'उत्पादन नाम',
+                      prefixIcon: Icon(Icons.shopping_bag_outlined,
+                          color: Colors.grey[600]),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: Color(0xFF1B5E20), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  // Category Dropdown
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: 'कोटि',
+                      prefixIcon: Icon(Icons.category_outlined,
+                          color: Colors.grey[600]),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300)),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    items: _categories
+                        .where((cat) => cat != 'सबै')
+                        .map((cat) =>
+                            DropdownMenuItem(value: cat, child: Text(cat)))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => selectedCategory = value!),
+                  ),
+                  SizedBox(height: 16),
+                  // Price and Unit Row
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextFormField(
+                          controller: priceController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'मूल्य (रू)',
+                            prefixIcon: Container(
+                              padding: EdgeInsets.all(12),
+                              child: Text(
+                                'रू',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                            prefixIconConstraints:
+                                BoxConstraints(minWidth: 48, minHeight: 48),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300)),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          value: selectedUnit,
+                          decoration: InputDecoration(
+                            labelText: 'इकाई',
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300)),
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: 12),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          items: units
+                              .map((u) =>
+                                  DropdownMenuItem(value: u, child: Text(u)))
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => selectedUnit = value!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 32),
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text("रद्द",
+                              style: TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (nameController.text.isNotEmpty &&
+                                priceController.text.isNotEmpty) {
+                              final newProduct = Product(
+                                name: nameController.text,
+                                category: selectedCategory,
+                                price: double.parse(priceController.text),
+                                unit: selectedUnit,
+                                quantity: _rand(),
+                              );
+                              setState(() {
+                                _products.add(newProduct);
+                                _filterProducts();
+                              });
+                              Navigator.pop(context);
+                              _showSnackBar(
+                                  'उत्पादन सफलतापूर्वक थपियो!', Colors.green);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF1B5E20),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text("थप्नुहोस्",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('रद्द गर्नुहोस्'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    priceController.text.isNotEmpty &&
-                    unitController.text.isNotEmpty) {
-                  final newProduct = Product(
-                    name: nameController.text,
-                    category: selectedCategory,
-                    price: double.parse(priceController.text),
-                    unit: unitController.text,
-                    quantity: _rand(),
-                  );
-                  setState(() {
-                    _products.add(newProduct);
-                    _filterProducts();
-                  });
-                  Navigator.pop(context);
-                  _showSnackBar('उत्पादन सफलतापूर्वक थपियो!', Colors.green);
-                }
-              },
-              child: Text('थप्नुहोस्'),
-            ),
-          ],
         ),
       ),
+    );
+  }
+}
+
+class QuantityPickerDialog extends StatefulWidget {
+  final int initialQuantity;
+
+  const QuantityPickerDialog({Key? key, required this.initialQuantity})
+      : super(key: key);
+
+  @override
+  _QuantityPickerDialogState createState() => _QuantityPickerDialogState();
+}
+
+class _QuantityPickerDialogState extends State<QuantityPickerDialog> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        TextEditingController(text: widget.initialQuantity.toString());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('मात्रा प्रविष्ट गर्नुहोस्'),
+      content: TextField(
+        controller: _controller,
+        keyboardType: TextInputType.number,
+        autofocus: true,
+        decoration: InputDecoration(
+          labelText: 'मात्रा',
+          border: OutlineInputBorder(),
+        ),
+        onSubmitted: (val) {
+          int? num = int.tryParse(val);
+          if (num != null && num > 0) {
+            Navigator.pop(context, num);
+          }
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('रद्द'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            int? val = int.tryParse(_controller.text);
+            if (val != null && val > 0) {
+              Navigator.pop(context, val);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          child: Text('ठिक छ'),
+        ),
+      ],
     );
   }
 }
