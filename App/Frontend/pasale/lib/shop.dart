@@ -1001,10 +1001,10 @@ class _ShopHomePageState extends State<ShopHomePage>
           } else if (index == 2) {
             _showAboutUsDialog();
           }
-          // index==0 is home, do nothing (just stay here) 
+          // index==0 is home, do nothing (just stay here)
           // as we are already on home page
           // You can implement navigation to home if needed
-          // index==2 is about us, do nothing (just stay here) 
+          // index==2 is about us, do nothing (just stay here)
           // as we are already on about us page
           // You can implement navigation to about us if needed
         },
@@ -1042,7 +1042,7 @@ class _ShopHomePageState extends State<ShopHomePage>
               Text(
                 'पसले एक सरल, स्मार्ट र नेपाली भाषामा आधारित पसल व्यवस्थापन एप हो। '
                 'यस एपको उद्देश्य साना तथा मझौला व्यवसायीहरूको दैनिक व्यापार सजिलो बनाउनु हो।',
-                style: TextStyle(fontSize: 16, color: Colors.grey[800] ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[800]),
               ),
               SizedBox(height: 12),
               Container(
@@ -1086,7 +1086,8 @@ class _ShopHomePageState extends State<ShopHomePage>
                   children: [
                     Text('तपाईंको सुझाव र प्रतिक्रिया सधैं स्वागत छ!',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
+                        style: TextStyle(
+                            fontSize: 14, fontStyle: FontStyle.italic)),
                     SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1094,7 +1095,8 @@ class _ShopHomePageState extends State<ShopHomePage>
                         Icon(Icons.copyright, size: 14, color: Colors.grey),
                         SizedBox(width: 4),
                         Text('2025 | Team Pasale',
-                            style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                            style: TextStyle(
+                                color: Colors.grey[700], fontSize: 12)),
                       ],
                     ),
                   ],
@@ -1136,7 +1138,8 @@ class _ShopHomePageState extends State<ShopHomePage>
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 14, height: 1.3, color: Colors.grey[800]),
+              style:
+                  TextStyle(fontSize: 14, height: 1.3, color: Colors.grey[800]),
             ),
           ),
         ],
