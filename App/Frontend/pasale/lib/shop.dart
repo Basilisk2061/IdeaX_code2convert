@@ -1020,7 +1020,7 @@ class _ShopHomePageState extends State<ShopHomePage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Icon(Icons.info_rounded, color: Color(0xFF1B5E20)),
@@ -1032,34 +1032,107 @@ class _ShopHomePageState extends State<ShopHomePage>
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'पसले एक सरल, स्मार्ट र नेपाली भाषामा आधारित पसल व्यवस्थापन एप हो। '
-                'यस एपको उद्देश्य साना तथा मझौला व्यवसायीहरूको दैनिक व्यापार सजिलो बनाउनु हो।\n\n'
-                'यो एप डेमो प्रयोजनका लागि बनाइएको हो।\n\n'
-                'पसले एपले स्टक व्यवस्थापन, बिक्री/किनमेल र आवाज खोज जस्ता सुविधाहरू उपलब्ध गराउँछ। '
-                'यसले तपाईंको पसलको सम्पूर्ण विवरण सजिलै ट्र्याक गर्न र विश्लेषण गर्न सहयोग गर्छ।\n\n'
-                'हामी नेपाली व्यवसायीहरूको डिजिटल यात्रामा साथ दिन प्रतिबद्ध छौं। '
-                'तपाईंको सुझाव र प्रतिक्रिया सधैं स्वागत छ!',
-                style: TextStyle(fontSize: 18),
+                'यस एपको उद्देश्य साना तथा मझौला व्यवसायीहरूको दैनिक व्यापार सजिलो बनाउनु हो।',
+                style: TextStyle(fontSize: 16, color: Colors.grey[800]),
               ),
-              SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.copyright, size: 16, color: Colors.grey),
-                  SizedBox(width: 3),
-                  Text('2025 | Team Pasale',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                ],
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.gavel, size: 18, color: Color(0xFF1B5E20)),
+                        SizedBox(width: 8),
+                        Text(
+                          'कानूनी अनुपालन',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1B5E20),
+                              fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    _buildTermItem(
+                        'तपाईंले (खुद्रा बिक्रेता) स्वेच्छाले आफ्नो बिक्री विवरणहरू यस एप मार्फत उपलब्ध गराउनुहुन्छ।'),
+                    SizedBox(height: 8),
+                    _buildTermItem(
+                        'हामी हाम्रा उद्देश्यहरू नियम र गोपनीयता नीतिमा स्पष्ट रूपमा खुलाउँछौं।'),
+                    SizedBox(height: 8),
+                    _buildTermItem(
+                        'डाटा प्रयोग वा बिक्री गर्नु अघि हामी यसलाई अज्ञात र सामूहिक (Aggregate) बनाउँछौं।'),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+              Center(
+                child: Column(
+                  children: [
+                    Text('तपाईंको सुझाव र प्रतिक्रिया सधैं स्वागत छ!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.copyright, size: 14, color: Colors.grey),
+                        SizedBox(width: 4),
+                        Text('2025 | Team Pasale',
+                            style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ठिक छ'),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF1B5E20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text('ठिक छ, बुझें',
+                  style: TextStyle(color: Colors.white, fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTermItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle_outline, color: Color(0xFF1B5E20), size: 16),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 14, height: 1.3, color: Colors.grey[800]),
+            ),
           ),
         ],
       ),

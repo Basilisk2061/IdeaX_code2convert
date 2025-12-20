@@ -1,0 +1,2 @@
+# Prefer union merges for YAML manifests to reduce conflicts
+pubspec.yaml merge=union

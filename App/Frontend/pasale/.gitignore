@@ -33,6 +33,9 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Lockfile (optional for apps to reduce cross-environment churn)
+pubspec.lock
+
 # Symbolication related
 app.*.symbols
 
