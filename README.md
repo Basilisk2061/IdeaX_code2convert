@@ -13,7 +13,7 @@ Most local retailers still rely on manual bookkeeping, which is time-consuming a
 
 The Pasale ecosystem is built on a multi-tiered architecture that ensures seamless data flow from a local shop to advanced AI models.
 
-![System Architecture](C:/Users/ACER/.gemini/antigravity/brain/df009488-3385-401f-9cf0-74742d14e693/uploaded_image_1766246269987.png)
+![System Architecture](./Architecture.png)
 
 ### 1. Mobile Application (The Shopkeeper's Tool)
 - **Kirana Shop Owner Interaction:** Designed for ease of use by non-tech-savvy users.
