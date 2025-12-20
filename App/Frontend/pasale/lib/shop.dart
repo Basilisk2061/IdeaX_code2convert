@@ -1004,6 +1004,9 @@ class _ShopHomePageState extends State<ShopHomePage>
           // index==0 is home, do nothing (just stay here) 
           // as we are already on home page
           // You can implement navigation to home if needed
+          // index==2 is about us, do nothing (just stay here) 
+          // as we are already on about us page
+          // You can implement navigation to about us if needed
         },
       ),
     );
